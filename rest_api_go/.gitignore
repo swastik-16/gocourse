@@ -29,7 +29,7 @@ go.work.sum
 
 cert.pem
 key.pem
-
+openssl.cnf
 # Editor/IDE
 # .idea/
 # .vscode/
