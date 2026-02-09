@@ -2,11 +2,13 @@ package main
 
 import (
 	//"encoding/json"
+	"crypto/tls"
 	"fmt"
-	"strings"
+	//"strings"
 	//"io"
 	"log"
 	"net/http"
+	"restapi/internal/api/middlewares"
 )
 type User struct{
 	Name string `json:"name"`
@@ -24,10 +26,21 @@ func teachersHandler(w http.ResponseWriter, r *http.Request){
 	fmt.Println(r.Method)
 	switch r.Method{
 	case http.MethodGet :
-		fmt.Println(r.URL.Path)
+		/*fmt.Println(r.URL.Path)
 		path := strings.TrimPrefix(r.URL.Path,"/teachers/")
 		userID := strings.TrimSuffix(path,"/")
 		fmt.Println("User ID:",userID)
+		fmt.Println("Query Params: ",r.URL.Query())
+		queryParams := r.URL.Query()
+		key:= queryParams.Get("key")
+		sortBy:= queryParams.Get("sortby")
+		sortOrder:= queryParams.Get("sortorder")
+
+		if sortOrder == ""{
+			sortOrder = "DESC"
+		}
+		fmt.Printf("SortBy: %v, SortOrder: %v, Key: %v ",sortBy,sortOrder,key)*/
+
 		w.Write([]byte("Hello GET Method on Teachers Route"))
 		//fmt.Println("Hello GET Method on Teachers Route")
 		return
@@ -103,14 +116,28 @@ func execsHandler(w http.ResponseWriter, r *http.Request){
 func main() {
 	port := ":3000"
 
-	http.HandleFunc("/",rootHandler)
+	cert := "cert.pem"
+	key := "key.pem"
+	mux := http.NewServeMux()
 
-	http.HandleFunc("/teachers/",teachersHandler)
-	http.HandleFunc("/students/",studentsHandler)
-	http.HandleFunc("/execs/",execsHandler)
+	mux.HandleFunc("/",rootHandler)
+	mux.HandleFunc("/teachers/",teachersHandler)
+	mux.HandleFunc("/students/",studentsHandler)
+	mux.HandleFunc("/execs/",execsHandler)
+
+	tlsConfig := &tls.Config{
+		MinVersion: tls.VersionTLS12,
+	}
+	//Create custom server
+	server := &http.Server{
+		Addr: port,
+		Handler: middlewares.SecurityHeaders(mux),
+		TLSConfig: tlsConfig,
+	}
+	
 
 	fmt.Println("Server is running on port:", port)
-	err := http.ListenAndServe(port,nil)
+	err := server.ListenAndServeTLS(cert,key)
 	if err!=nil{
 		log.Fatalln("Error starting the server:",err)
 	}
